@@ -18,8 +18,6 @@ from ui.panels import LeftPanel, CenterPanel, RightPanel, section_title, start_r
 class MyApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        
-        # Window title and size
         self.title("QuickSort Application")
         self.geometry("1500x850")
         self.minsize(1200, 700)

@@ -5,7 +5,6 @@ import requests  # type: ignore
 from PIL import Image
 import os
 
-# Import constants from separate file
 from constants import (
     BG_APP, BG_PANEL, BG_CARD, BG_INPUT,
     ACCENT_BLUE, ACCENT_BRIGHT, BORDER_COLOR, BORDER_BRIGHT,
@@ -351,7 +350,7 @@ class MyApp(ctk.CTk):
                      text_color=color).pack(side="right")
     
     def random_input(self):
-        nums = random.sample(range(1, 100), random.randint(6, 14))
+        nums = random.sample(range(1, 100), random.randint(6, 10))
         self.array_entry.delete("1.0", "end")
         self.array_entry.insert("end", ", ".join(map(str, nums)))
         
@@ -404,6 +403,7 @@ class MyApp(ctk.CTk):
         self.log_box.configure(state="disabled")
     
     def focus_entry(self):
+        self.array_entry.delete("1.0", "end")
         self.array_entry.focus_set()
         
     def on_speed_change(self, val):

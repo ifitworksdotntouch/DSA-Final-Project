@@ -25,7 +25,6 @@ def section_title(parent, text, grid=False, row=0):
 
 
 def start_row(parent, label_text, var, color):
-    """Create a label-value row."""
     row = ctk.CTkFrame(parent, fg_color="transparent")
     row.pack(fill="x", padx=12, pady=2)
     ctk.CTkLabel(row, text=label_text, font=FONT_SMALL,
@@ -39,13 +38,13 @@ class LeftPanel:
         self.app = app
     
     def build(self):
-        self._input_section()
-        self._pivot_section()
-        self._speed_section()
-        self._legend_section()
-        self._status_section()
+        self.input_section()
+        self.pivot_section()
+        self.speed_section()
+        self.legend_section()
+        self.status_section()
     
-    def _input_section(self):
+    def input_section(self):
         input_frame = card_frame(self.app.left)
         input_frame.pack(fill="x", pady=(0, 8)) 
         
@@ -71,7 +70,7 @@ class LeftPanel:
                       border_width=1, border_color=BORDER_BRIGHT, 
                       command=self.app.generate_array).pack(fill="x", padx=10, pady=(0, 10))
     
-    def _pivot_section(self):
+    def pivot_section(self):
         pivot_frame = card_frame(self.app.left)
         pivot_frame.pack(fill="x", pady=(0, 8))
         
@@ -94,7 +93,7 @@ class LeftPanel:
                                hover_color=ACCENT_BLUE).pack(anchor="w", padx=14, pady=3)
         ctk.CTkFrame(pivot_frame, height=10, fg_color="transparent").pack()
     
-    def _speed_section(self):
+    def speed_section(self):
         speed_frame = card_frame(self.app.left)
         speed_frame.pack(fill="x", pady=(0, 8))
         
@@ -115,7 +114,7 @@ class LeftPanel:
         for txt, side in [("Slow", "left"), ("Fast", "right")]:
             ctk.CTkLabel(row, text=txt, font=FONT_SMALL, text_color=TEXT_SECONDARY).pack(side=side)
     
-    def _legend_section(self):
+    def legend_section(self):
         legend_frame = card_frame(self.app.left)
         legend_frame.pack(fill="x", pady=(0, 8))
         
@@ -136,7 +135,7 @@ class LeftPanel:
         
         ctk.CTkFrame(legend_frame, height=6, fg_color="transparent").pack()
     
-    def _status_section(self):
+    def status_section(self):
         status_frame = card_frame(self.app.left)
         status_frame.pack(fill="x", pady=(0, 8))
         
@@ -155,12 +154,12 @@ class CenterPanel:
         self.app = app
     
     def build(self):
-        self._controls()
-        self._canvas()
-        self._decision_canvas()
-        self._quote_bar()
+        self.controls()
+        self.canvas()
+        self.decision_canvas()
+        self.quote_bar()
     
-    def _controls(self):
+    def controls(self):
         control_bar = card_frame(self.app.center)
         control_bar.grid(row=0, column=0, sticky="ew", pady=(0, 8))
         
@@ -186,7 +185,7 @@ class CenterPanel:
         self.app.speed_display = ctk.CTkLabel(inner, text="1.0", font=FONT_LABEL, text_color=COLOR_SWAP)
         self.app.speed_display.pack(side="left", padx=6)
     
-    def _canvas(self):
+    def canvas(self):
         canvas_frame = card_frame(self.app.center)
         canvas_frame.grid(row=1, column=0, sticky="nsew", pady=(0, 8))
         canvas_frame.grid_propagate(True)
@@ -196,7 +195,7 @@ class CenterPanel:
         self.app.canvas = tk.Canvas(canvas_frame, bg=BG_APP, highlightthickness=0)
         self.app.canvas.pack(fill="both", expand=True, padx=8, pady=(4, 8))
     
-    def _decision_canvas(self):
+    def decision_canvas(self):
         decision_frame = card_frame(self.app.center)
         decision_frame.grid(row=2, column=0, sticky="ew", pady=(0, 8))
         
@@ -205,7 +204,7 @@ class CenterPanel:
         self.app.decision_canvas = tk.Canvas(decision_frame, bg=BG_APP, highlightthickness=0, height=160)
         self.app.decision_canvas.pack(fill="x", padx=8, pady=(4, 8))
     
-    def _quote_bar(self):
+    def quote_bar(self):
         quote_frame = card_frame(self.app.center, fg_color=BG_PANEL)
         quote_frame.grid(row=3, column=0, sticky="ew")
         
@@ -223,11 +222,11 @@ class RightPanel:
         self.app = app
     
     def build(self):
-        self._log()
-        self._stats()
-        self._subarray()
+        self.log()
+        self.stats()
+        self.subarray()
     
-    def _log(self):
+    def log(self):
         log_frame = card_frame(self.app.right)
         log_frame.grid(row=0, column=0, sticky="nsew", pady=(0, 8))
         log_frame.grid_rowconfigure(1, weight=1)
@@ -246,7 +245,7 @@ class RightPanel:
                                   command=self.app.clear_log)
         clear_btn.grid(row=2, column=0, sticky="e", padx=10, pady=(0, 8))
     
-    def _stats(self):
+    def stats(self):
         stat_frame = card_frame(self.app.right)
         stat_frame.grid(row=1, column=0, sticky="ew", pady=(0, 8))
 
@@ -268,7 +267,7 @@ class RightPanel:
 
         ctk.CTkFrame(stat_frame, height=6, fg_color="transparent").pack()
     
-    def _subarray(self):
+    def subarray(self):
         sub_array_frame = card_frame(self.app.right)
         sub_array_frame.grid(row=2, column=0, sticky="ew")
 

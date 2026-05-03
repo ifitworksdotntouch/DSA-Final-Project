@@ -26,7 +26,6 @@ FONT_MONO = ("Consolas", 11)
 FONT_HEADER = ("Consolas", 15, "bold")
 FONT_CTRL = ("Consolas", 12, "bold")
 
-def card_frame(parent, **kwargs):
-    defaults = dict(corner_radius=8, border_width=1, border_color=BORDER_COLOR, fg_color=BG_CARD)
-    defaults.update(kwargs)
-    return ctk.CTkFrame(parent, **defaults)
+def card_frame(parent, corner_radius=8, border_width=1, border_color=BORDER_COLOR, fg_color=BG_CARD):
+    return ctk.CTkFrame(parent, corner_radius=corner_radius, border_width=border_width,
+                       border_color=border_color, fg_color=fg_color)

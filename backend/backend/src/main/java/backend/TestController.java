@@ -12,9 +12,8 @@ public class TestController {
 
     @GetMapping("/api/status")
     public Map<String, String> status(@RequestParam(defaultValue = "Guest") String name) {
-        // This is where your heavy Java logic lives
         String processedName = name.toUpperCase().trim();
 
-        return Map.of("message", "Hello " + processedName + "Tangina mo Dean Kubit");
+        return Map.of("message", "Hello " + processedName + "Nice Dean");
     }
 }

@@ -1,6 +1,5 @@
 import customtkinter as ctk
 
-# Color constants
 BG_APP = "#0a0f1a"
 BG_PANEL = "#0f1c2e"
 BG_CARD = "#132338"
@@ -20,7 +19,6 @@ COLOR_SWAP = "#2ed573"
 COLOR_SORTED = "#1e90ff"
 COLOR_UNSORTED = "#2a4a6b"
 
-# Font constants
 FONT_TITLE = ("Consolas", 13, "bold")
 FONT_LABEL = ("Consolas", 11, "bold")
 FONT_SMALL = ("Consolas", 10)
@@ -28,7 +26,6 @@ FONT_MONO = ("Consolas", 11)
 FONT_HEADER = ("Consolas", 15, "bold")
 FONT_CTRL = ("Consolas", 12, "bold")
 
-# Helper function
 def card_frame(parent, **kwargs):
     defaults = dict(corner_radius=8, border_width=1, border_color=BORDER_COLOR, fg_color=BG_CARD)
     defaults.update(kwargs)

@@ -28,8 +28,6 @@ from constants import (
     card_frame,
 )
 
-
-
 def section_title(parent, text, grid=False, row=0):
     lbl = ctk.CTkLabel(parent, text=text, font=FONT_TITLE, text_color=TEXT_SECONDARY)
     if grid:
@@ -45,7 +43,6 @@ def start_row(parent, label_text, var, color):
 
 
 class LeftPanel:
-
     def __init__(self, app):
         self.app = app
 
@@ -57,9 +54,11 @@ class LeftPanel:
         self.status_section()
     
     def input_section(self):
-        input_frame = card_frame(self.app.left); input_frame.pack(fill="x", pady=(0, 8))
+        input_frame = card_frame(self.app.left)
+        input_frame.pack(fill="x", pady=(0, 8))
         section_title(input_frame, "INPUT ARRAY")
-        btn_row = ctk.CTkFrame(input_frame, fg_color="transparent"); btn_row.pack(fill="x", padx=10, pady=(0, 6))
+        btn_row = ctk.CTkFrame(input_frame, fg_color="transparent")
+        btn_row.pack(fill="x", padx=10, pady=(0, 6))
         ctk.CTkButton(btn_row, text="Manual", width=108, height=30, font=FONT_SMALL, fg_color=ACCENT_BLUE, hover_color=ACCENT_BRIGHT, corner_radius=6, command=self.app.focus_entry).pack(side="left", padx=(0, 6))
         ctk.CTkButton(btn_row, text="Random", width=108, height=30, font=FONT_SMALL, fg_color=ACCENT_BLUE, hover_color=ACCENT_BRIGHT, corner_radius=6, command=self.app.random_input).pack(side="left")
         self.app.array_entry = ctk.CTkTextbox(input_frame, height=48, fg_color=BG_INPUT, text_color=TEXT_PRIMARY, border_color=BORDER_BRIGHT, border_width=1, corner_radius=6, font=FONT_MONO, wrap="word")
@@ -68,7 +67,8 @@ class LeftPanel:
     
     def pivot_section(self):
         pivot_frame = card_frame(self.app.left); pivot_frame.pack(fill="x", pady=(0, 8))
-        header = ctk.CTkFrame(pivot_frame, fg_color="transparent"); header.pack(fill="x", padx=10, pady=(10, 4)); header.grid_columnconfigure(0, weight=1)
+        header = ctk.CTkFrame(pivot_frame, fg_color="transparent"); header.pack(fill="x", padx=10, pady=(10, 4))
+        header.grid_columnconfigure(0, weight=1)
         ctk.CTkLabel(header, text="PIVOT SELECTION", font=FONT_TITLE, text_color=TEXT_PRIMARY).grid(row=0, column=0, sticky="w")
         ctk.CTkButton(header, text="?", width=22, height=22, font=FONT_SMALL, fg_color=ACCENT_BLUE, hover_color=ACCENT_BRIGHT, corner_radius=11, command=self.app.show_pivot_help).grid(row=0, column=1, sticky="e")
         self.app.pivot_var = ctk.StringVar(value="last")
@@ -87,7 +87,8 @@ class LeftPanel:
             ctk.CTkLabel(row, text=txt, font=FONT_SMALL, text_color=TEXT_SECONDARY).pack(side=side)
     
     def legend_section(self):
-        legend_frame = card_frame(self.app.left); legend_frame.pack(fill="x", pady=(0, 8))
+        legend_frame = card_frame(self.app.left)
+        legend_frame.pack(fill="x", pady=(0, 8))
         section_title(legend_frame, "LEGEND")
         colors = [(COLOR_PIVOT, "Pivot"), (COLOR_COMPARE, "Comparing"), (COLOR_SWAP, "Swapping"), (COLOR_SORTED, "Sorted"), (COLOR_UNSORTED, "Unsorted")]
         for color, label in colors:
@@ -103,9 +104,7 @@ class LeftPanel:
         self.app.status_var = ctk.StringVar(value="Idle")
         self.app.status_label = ctk.CTkLabel(row, textvariable=self.app.status_var, font=FONT_LABEL, text_color=COLOR_PIVOT); self.app.status_label.pack(side="right", padx=6)
 
-
 class CenterPanel:
-
     def __init__(self, app):
         self.app = app
 
@@ -117,7 +116,8 @@ class CenterPanel:
     
     def controls(self):
         control_bar = card_frame(self.app.center); control_bar.grid(row=0, column=0, sticky="ew", pady=(0, 8))
-        inner = ctk.CTkFrame(control_bar, fg_color="transparent"); inner.pack(pady=12, padx=12)
+        inner = ctk.CTkFrame(control_bar, fg_color="transparent")
+        inner.pack(pady=12, padx=12)
         buttons = [("▶  Start", "lime", self.app.start_sort), ("⏸  Pause", "#ffa502", self.app.pause_sort), ("⏭  Step", "#b44fff", self.app.step_sort), ("↺  Reset", COLOR_PIVOT, self.app.reset_sort)]
         for text, color, cmd in buttons:
             ctk.CTkButton(inner, text=text, width=110, height=36, font=FONT_CTRL, text_color=color, fg_color=BG_INPUT, hover_color=BG_PANEL, border_width=1, border_color=BORDER_BRIGHT, corner_radius=6, command=cmd).pack(side="left", padx=5)
@@ -136,11 +136,11 @@ class CenterPanel:
         self.app.decision_canvas = tk.Canvas(decision_frame, bg=BG_APP, highlightthickness=0, height=160); self.app.decision_canvas.pack(fill="x", padx=8, pady=(4, 8))
     
     def quote_bar(self):
-        quote_frame = card_frame(self.app.center, fg_color=BG_PANEL); quote_frame.grid(row=3, column=0, sticky="ew")
-        choices = ['"Divide and conquer — the essence of QuickSort."', "Dean Galdiano The Coach of The Dream Team", "The Paul Method", "DIK A 💪 DIK A 💪 DIK A 💪"]
+        quote_frame = card_frame(self.app.center, fg_color=BG_PANEL)
+        quote_frame.grid(row=3, column=0, sticky="ew")
+        choices = ['"Divide and conquer — the essence of QuickSort."']
         self.app.quote_var = ctk.StringVar(value=random.choice(choices))
         ctk.CTkLabel(quote_frame, textvariable=self.app.quote_var, font=FONT_HEADER, text_color=TEXT_MUTED).pack(pady=8)
-
 
 class RightPanel:
     def __init__(self, app):

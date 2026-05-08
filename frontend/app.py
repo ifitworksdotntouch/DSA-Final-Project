@@ -69,8 +69,7 @@ class MyApp(ctk.CTk):
         body = ctk.CTkFrame(help_section, fg_color=BG_PANEL, corner_radius=10)
         body.pack(fill="both", expand=True, padx=14, pady=(0, 14))
 
-        sections = [("How to use", "1. Enter numbers manually, or click Random.\n2. Choose a pivot strategy.\n3. Press Start — or use Step to go one step at a time.\n4. Watch the Explanation Log for step-by-step reasoning."),
-                    ("Tips for better visualization", "• Use 5–15 elements for clear animations.\n• Try different pivots on the same array to compare.\n• Slow the speed down to follow the recursion tree.")]
+        sections = [("")]
 
         for heading, text in sections:
             ctk.CTkLabel(body, text=heading, font=FONT_LABEL, text_color=ACCENT_BRIGHT).pack(anchor="w", padx=16, pady=(12, 4))
@@ -85,7 +84,7 @@ class MyApp(ctk.CTk):
         body = ctk.CTkFrame(about_section, fg_color=BG_PANEL, corner_radius=10)
         body.pack(fill="both", expand=True, padx=14, pady=(0, 14))
 
-        about_text = "QuickSort Visualizer\n\nVisualizes the QuickSort algorithm step-by-step,\nincluding pivot selection, comparisons, swaps,\nand the recursion tree."
+        about_text = ""
 
         ctk.CTkLabel(body, text=about_text, justify="center", font=FONT_SMALL, text_color=TEXT_PRIMARY).pack(expand=True, pady=20)
         ctk.CTkButton(about_section, text="Close", fg_color=ACCENT_BLUE, hover_color=ACCENT_BLUE, corner_radius=6, command=about_section.destroy).pack(pady=12)
@@ -114,9 +113,7 @@ class MyApp(ctk.CTk):
         RightPanel(self).build()
     
     def random_input(self):
-        nums = random.sample(range(1, 100), random.randint(6, 10))
-        self.array_entry.delete("1.0", "end")
-        self.array_entry.insert("end", ", ".join(map(str, nums)))
+        pass
 
     def generate_array(self):
         pass
@@ -140,7 +137,7 @@ class MyApp(ctk.CTk):
         body = ctk.CTkFrame(window, fg_color=BG_PANEL, corner_radius=10)
         body.pack(fill="both", expand=True, padx=14, pady=(0, 14))
 
-        text = "First element:  Always picks arr[lo] as pivot.\n  → Worst case O(n²) on sorted arrays.\n\nLast element:   Always picks arr[hi] as pivot.\n  → Same worst-case risk as First.\n\nRandom element: Picks a random index each time.\n  → Avoids worst-case on nearly-sorted data.\n  → Expected O(n log n) performance."
+        text = ""
         ctk.CTkLabel(body, text=text, justify="left", font=FONT_SMALL, text_color=TEXT_PRIMARY, wraplength=370).pack(padx=16, pady=12)
         ctk.CTkButton(window, text="Close", fg_color=ACCENT_BLUE, hover_color=ACCENT_BRIGHT, corner_radius=6, command=window.destroy).pack(pady=12)
     

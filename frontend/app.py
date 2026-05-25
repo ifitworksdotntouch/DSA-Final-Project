@@ -2,43 +2,55 @@ import customtkinter as ctk
 import tkinter as tk
 import random
 import os
+import re
+from api_client import SortApiClient, SortResult, SortStep
+
 
 from PIL import Image
 
 from constants import (
-    BG_APP, BG_PANEL, BG_CARD, BG_INPUT,
+    BG_APP, BG_PANEL, BG_CARD,
     ACCENT_BLUE, ACCENT_BRIGHT, BORDER_COLOR, BORDER_BRIGHT,
     TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED,
     COLOR_PIVOT, COLOR_COMPARE, COLOR_SWAP, COLOR_SORTED, COLOR_UNSORTED,
-    FONT_TITLE, FONT_LABEL, FONT_SMALL, FONT_MONO, FONT_HEADER, FONT_CTRL,
-    card_frame,
+    FONT_LABEL, FONT_SMALL, FONT_HEADER,
 )
-from ui.panels import (
-    LeftPanel,
-    CenterPanel,
-    RightPanel,
-    section_title,
-    start_row,
-)
+from ui.panels import LeftPanel, CenterPanel, RightPanel
 
 class MyApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("QuickSort Application")
-        self.geometry("1500x850")
-        self.minsize(1200, 700)
+        self.geometry("1600x920")
+        self.minsize(1100, 720)
         self.configure(fg_color=BG_APP)
-        self.resizable(False, False)
+        self.resizable(True, True)
+        
+        self.api = SortApiClient()
+        self.array = []
+        self._steps = []
+        self._step_index = 0
+        self._playing = False
+        self._sort_result = None
+        self._playback_after_id = None
+        self._resize_after_id = None
+        self._last_logged_msg = None
+        self.after(300, self.check_connection)
+        
         self.build_layout()
         self.header()
         self.build_left_panel()
         self.build_center_panel()
         self.build_right_panel()
-        
+
+        self.canvas.bind("<Configure>", self._on_canvas_configure)
+        self.decision_canvas.bind("<Configure>", self._on_canvas_configure)
+        self.on_speed_change(self.speed_var.get())
+
     def build_layout(self):
         self.grid_columnconfigure(0, weight=0, minsize=260)
-        self.grid_columnconfigure(1, weight=1)
-        self.grid_columnconfigure(2, weight=0, minsize=280)
+        self.grid_columnconfigure(1, weight=2, minsize=420)
+        self.grid_columnconfigure(2, weight=1, minsize=340)
         self.grid_rowconfigure(1, weight=1)
         
     def header(self):
@@ -63,30 +75,57 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(btn_frame, text=label, width=70, height=28, font=FONT_SMALL, fg_color=ACCENT_BLUE, hover_color=ACCENT_BRIGHT, text_color=TEXT_PRIMARY, corner_radius=6, command=cmd).pack(side="left", padx=4)
     
     def open_help(self):
-        help_section = self.dialog("Help", "500x420")
+        help_section = self.dialog("Help", "600x560", minsize=(480, 400))
         self.dialog_header(help_section, "QuickSort Help")
 
-        body = ctk.CTkFrame(help_section, fg_color=BG_PANEL, corner_radius=10)
+        body = ctk.CTkScrollableFrame(
+            help_section, fg_color=BG_PANEL, corner_radius=10,
+            scrollbar_button_color=BORDER_COLOR,
+        )
         body.pack(fill="both", expand=True, padx=14, pady=(0, 14))
 
-        sections = [("")]
+        sections = [
+            ("What this app does",
+             "You enter a list of integers (or use Random). The Spring Boot backend runs quicksort with Hoare partitioning and records every comparison, swap, and pivot choice. The desktop client animates those steps so you can see how the array evolves."),
+            ("Controls",
+             "Start fetches the step trace and plays it. Pause stops auto-play. Step moves one frame forward (useful with Pause). Reset jumps back to the first frame. Adjust Animation Speed to slow down or speed up playback."),
+            ("Colors",
+             "Pivot highlights the pivot index, Comparing shows indices being compared to the pivot, Swapping shows a pair being exchanged, Sorted marks indices known to be in final position, and Unsorted is everything else in the active window."),
+            ("Backend",
+             "The API must be running at http://localhost:8080 (see the backend Spring project). If it is offline, Random still works locally, but Start needs the server to compute sort steps."),
+        ]
 
         for heading, text in sections:
             ctk.CTkLabel(body, text=heading, font=FONT_LABEL, text_color=ACCENT_BRIGHT).pack(anchor="w", padx=16, pady=(12, 4))
-            ctk.CTkLabel(body, text=text, justify="left", font=FONT_SMALL, text_color=TEXT_PRIMARY, wraplength=440).pack(anchor="w", padx=24)
+            lbl = ctk.CTkLabel(
+                body, text=text, justify="left", font=FONT_SMALL,
+                text_color=TEXT_PRIMARY, anchor="w",
+            )
+            lbl.pack(anchor="w", padx=24, pady=(0, 4))
+            self._bind_wrap_to_parent(body, lbl, inset=48)
 
         ctk.CTkButton(help_section, text="Close", fg_color=ACCENT_BLUE, hover_color=ACCENT_BRIGHT, corner_radius=6, command=help_section.destroy).pack(pady=12)
     
     def open_about(self):
-        about_section = self.dialog("About", "400x300")
+        about_section = self.dialog("About", "480x360", minsize=(400, 280))
         self.dialog_header(about_section, "About this app")
 
         body = ctk.CTkFrame(about_section, fg_color=BG_PANEL, corner_radius=10)
         body.pack(fill="both", expand=True, padx=14, pady=(0, 14))
+        body.grid_columnconfigure(0, weight=1)
 
-        about_text = ""
-
-        ctk.CTkLabel(body, text=about_text, justify="center", font=FONT_SMALL, text_color=TEXT_PRIMARY).pack(expand=True, pady=20)
+        about_text = (
+            "QuickSort Application\n\n"
+            "DSA final project: Python (CustomTkinter) frontend with a Java Spring Boot "
+            "sorting service. Visualization uses step data returned from the server.\n\n"
+            "Median-of-three pivot selection and Hoare partition are implemented on the backend."
+        )
+        about_lbl = ctk.CTkLabel(
+            body, text=about_text, justify="left", font=FONT_SMALL,
+            text_color=TEXT_PRIMARY, anchor="w",
+        )
+        about_lbl.grid(row=0, column=0, sticky="ew", padx=20, pady=20)
+        self._bind_wrap_to_parent(body, about_lbl, inset=48)
         ctk.CTkButton(about_section, text="Close", fg_color=ACCENT_BLUE, hover_color=ACCENT_BLUE, corner_radius=6, command=about_section.destroy).pack(pady=12)
     
     def build_left_panel(self):
@@ -113,33 +152,146 @@ class MyApp(ctk.CTk):
         RightPanel(self).build()
     
     def random_input(self):
-        pass
+        self.api.random_array_async(
+            on_success=self._apply_random_array,
+            on_error=lambda _: self._apply_random_array([random.randint(1, 99) for _ in range(10)]),
+            tk_root=self,
+        )
+
+    def _apply_random_array(self, arr):
+        self._cancel_playback()
+        self._steps = []
+        self._step_index = 0
+        self._sort_result = None
+        self.array = list(arr)
+        self.array_entry.delete("1.0", "end")
+        self.array_entry.insert("1.0", ", ".join(str(x) for x in self.array))
+        self._reset_stats()
+        self._last_logged_msg = None
+        self.clear_log()
+        self.log(f"Random array loaded ({len(self.array)} elements).")
+        self._draw_bars_from_array(self.array, None)
+        self._draw_recursion_panel(None, self.array)
+        self.update_status("Ready", TEXT_PRIMARY)
 
     def generate_array(self):
-        pass
+        arr = self._parse_array_from_entry()
+        if arr is None:
+            self.update_status("Invalid input — use integers", COLOR_PIVOT)
+            self.log("Could not parse the text box. Use comma or space separated integers (e.g. 5, 2, 9, 1).")
+            return
+        self._cancel_playback()
+        self._steps = []
+        self._step_index = 0
+        self._sort_result = None
+        self.array = arr
+        self._reset_stats()
+        self._last_logged_msg = None
+        self.log(f"Array set ({len(self.array)} elements). Press Start to sort.")
+        self._draw_bars_from_array(self.array, None)
+        self._draw_recursion_panel(None, self.array)
+        self.update_status("Ready", TEXT_PRIMARY)
 
     def start_sort(self):
-        pass
+        arr = self._parse_array_from_entry()
+        if arr is None or len(arr) == 0:
+            self.update_status("Enter a non-empty array", COLOR_PIVOT)
+            return
+        self.array = arr
+        self._cancel_playback()
+        self._playing = True
+        self._steps = []
+        self._step_index = 0
+        self._sort_result = None
+        self._last_logged_msg = None
+        self.update_status("Requesting sort…", ACCENT_BRIGHT)
+        self.log("Requesting sort trace from backend…")
+
+        def on_ok(result: SortResult):
+            self._sort_result = result
+            self._steps = result.steps
+            self._step_index = 0
+            self.clear_log()
+            self.log(f"Trace loaded: {len(self._steps)} steps.")
+            self._render_current_step(log_auto=True)
+            self.update_status("Playing", ACCENT_BRIGHT)
+            self._schedule_playback_tick()
+
+        def on_err(msg: str):
+            self._playing = False
+            self.update_status("Sort failed", COLOR_PIVOT)
+            self.log(msg)
+
+        self.api.sort_async(arr, on_ok, on_err, self)
 
     def pause_sort(self):
-        pass
+        self._playing = False
+        self._cancel_playback()
+        if self._steps:
+            self.update_status("Paused", TEXT_SECONDARY)
 
     def step_sort(self):
-        pass
+        if not self._steps:
+            self.log("Run Start first to load steps.")
+            return
+        self._playing = False
+        self._cancel_playback()
+        if self._step_index < len(self._steps) - 1:
+            self._step_index += 1
+        self._render_current_step(log_auto=False)
+        if self._step_index >= len(self._steps) - 1:
+            self.update_status("Complete", COLOR_SWAP)
+        else:
+            self.update_status("Paused (step)", TEXT_SECONDARY)
 
     def reset_sort(self):
-        pass
+        self._playing = False
+        self._cancel_playback()
+        self._step_index = 0
+        self._last_logged_msg = None
+        if self._steps:
+            self._render_current_step(log_auto=False)
+            self.update_status("Reset", TEXT_PRIMARY)
+        else:
+            arr = self._parse_array_from_entry()
+            if arr:
+                self.array = arr
+            self._draw_bars_from_array(self.array, None)
+            self._draw_recursion_panel(None, self.array)
+            self._reset_stats()
+            self.update_status("Idle", TEXT_PRIMARY)
     
     def show_pivot_help(self):
-        window = self.dialog("Pivot Selection Help", "400x250")
-        self.dialog_header(window, "Pivot Selection Strategies")
+        window = self.dialog("Pivot selection (fixed)", "520x300", minsize=(420, 240))
+        self.dialog_header(window, "Pivot strategy")
 
         body = ctk.CTkFrame(window, fg_color=BG_PANEL, corner_radius=10)
         body.pack(fill="both", expand=True, padx=14, pady=(0, 14))
 
-        text = ""
-        ctk.CTkLabel(body, text=text, justify="left", font=FONT_SMALL, text_color=TEXT_PRIMARY, wraplength=370).pack(padx=16, pady=12)
+        text = (
+            "The backend uses a fixed strategy: median-of-three on the first, middle, and last element "
+            "of each subarray, then that median is moved to the high index before Hoare partitioning "
+            "(same idea as a typical class quicksort reference). There is no pivot mode to choose."
+        )
+        lbl = ctk.CTkLabel(
+            body, text=text, justify="left", font=FONT_SMALL,
+            text_color=TEXT_PRIMARY, anchor="w",
+        )
+        lbl.pack(fill="x", padx=16, pady=12)
+        self._bind_wrap_to_parent(body, lbl, inset=40)
         ctk.CTkButton(window, text="Close", fg_color=ACCENT_BLUE, hover_color=ACCENT_BRIGHT, corner_radius=6, command=window.destroy).pack(pady=12)
+
+    def _bind_wrap_to_parent(self, parent, label, inset=32):
+        """Keep multi-line labels from clipping when the window is resized."""
+        def _apply(_event=None):
+            try:
+                w = parent.winfo_width()
+                if w > inset + 40:
+                    label.configure(wraplength=w - inset)
+            except tk.TclError:
+                pass
+        parent.bind("<Configure>", lambda e: _apply())
+        parent.after(50, _apply)
     
 
     def update_status(self, text, color=TEXT_PRIMARY):
@@ -163,14 +315,17 @@ class MyApp(ctk.CTk):
 
     def on_speed_change(self, val):
         label = f"{float(val):.2f}"
-        self.speed_val_label.configure(text=label)
+        self.speed_val_label.configure(text=label + "×")
+        if hasattr(self, "speed_display"):
+            self.speed_display.configure(text=label)
 
-    def dialog(self, title, geometry):
+    def dialog(self, title, geometry, minsize=(480, 360)):
         window = ctk.CTkToplevel(self)
         window.title(title)
         window.geometry(geometry)
+        window.minsize(minsize[0], minsize[1])
         window.configure(fg_color=BG_APP)
-        window.resizable(False, False)
+        window.resizable(True, True)
         window.after(100, lambda: (window.lift(), window.focus_force(), window.grab_set()))
         return window
 
@@ -178,3 +333,222 @@ class MyApp(ctk.CTk):
         frame = ctk.CTkFrame(parent, fg_color=BG_CARD, corner_radius=10)
         frame.pack(fill="x", padx=14, pady=14)
         ctk.CTkLabel(frame, text=text, font=FONT_HEADER, text_color=TEXT_PRIMARY).pack(pady=12)
+        
+    def check_connection(self):
+        import threading
+        def _ping():
+            ok = self.api.health()
+            def _update():
+                if ok:
+                    self.backend_var.set("● Connected")
+                    self.backend_label.configure(text_color=COLOR_SWAP)
+                else:
+                    self.backend_var.set("● Offline")
+                    self.backend_label.configure(text_color=COLOR_PIVOT)
+            self.after(0, _update)
+        threading.Thread(target=_ping, daemon=True).start()
+
+    # --- Array parsing ---
+
+    def _parse_array_from_entry(self):
+        text = self.array_entry.get("1.0", "end").strip()
+        if not text:
+            return None
+        parts = re.split(r"[\s,;]+", text)
+        out = []
+        for p in parts:
+            if not p:
+                continue
+            try:
+                out.append(int(p))
+            except ValueError:
+                return None
+        return out
+
+    # --- Playback ---
+
+    def _cancel_playback(self):
+        if self._playback_after_id is not None:
+            try:
+                self.after_cancel(self._playback_after_id)
+            except Exception:
+                pass
+            self._playback_after_id = None
+
+    def _schedule_playback_tick(self):
+        if not self._playing or not self._steps:
+            return
+        if self._step_index >= len(self._steps) - 1:
+            self._playing = False
+            self.update_status("Complete", COLOR_SWAP)
+            if self._sort_result is not None:
+                self._apply_final_stats(self._sort_result)
+            return
+        speed = float(self.speed_var.get())
+        delay = max(25, int(380 / max(speed, 0.05)))
+        self._playback_after_id = self.after(delay, self._playback_tick)
+
+    def _playback_tick(self):
+        self._playback_after_id = None
+        if not self._playing or not self._steps:
+            return
+        if self._step_index >= len(self._steps) - 1:
+            self._playing = False
+            self.update_status("Complete", COLOR_SWAP)
+            if self._sort_result is not None:
+                self._apply_final_stats(self._sort_result)
+            return
+        self._step_index += 1
+        self._render_current_step(log_auto=True)
+        self._schedule_playback_tick()
+
+    def _render_current_step(self, log_auto: bool):
+        if not self._steps:
+            return
+        step = self._steps[self._step_index]
+        self._draw_bars_from_step(step)
+        self._draw_recursion_panel(step, step.array)
+        self._update_stats_from_step(step)
+        self._maybe_log_step(step, log_auto=log_auto)
+        if self._step_index >= len(self._steps) - 1 and self._sort_result is not None:
+            self._apply_final_stats(self._sort_result)
+
+    def _maybe_log_step(self, step: SortStep, log_auto: bool):
+        msg = step.message or ""
+        if not msg:
+            return
+        if msg == self._last_logged_msg:
+            return
+        if log_auto:
+            if self._should_log_auto(msg):
+                self.log(msg)
+                self._last_logged_msg = msg
+        else:
+            self.log(msg)
+            self._last_logged_msg = msg
+
+    @staticmethod
+    def _should_log_auto(msg: str) -> bool:
+        keys = (
+            "Pivot selected",
+            "Pivot (",
+            "Median setup",
+            "Swapped",
+            "Partitioning complete",
+            "final position",
+        )
+        return any(k in msg for k in keys)
+
+    def _reset_stats(self):
+        self.comparison_var.set("0")
+        self.swap_var.set("0")
+        self.depth_var.set("0")
+        self.left_idx_var.set("—")
+        self.right_idx_var.set("—")
+        self.subarray_var.set("[ ]")
+
+    def _update_stats_from_step(self, step: SortStep):
+        self.comparison_var.set(str(step.comparisons))
+        self.swap_var.set(str(step.swaps))
+        self.depth_var.set(str(step.depth))
+        self.left_idx_var.set(str(step.left))
+        self.right_idx_var.set(str(step.right))
+        arr = step.array
+        if step.left <= step.right and arr:
+            sub = arr[step.left : step.right + 1]
+            self.subarray_var.set("[ " + ", ".join(str(x) for x in sub) + " ]")
+        else:
+            self.subarray_var.set("[ ]")
+
+    def _apply_final_stats(self, result: SortResult):
+        self.comparison_var.set(str(result.total_comparisons))
+        self.swap_var.set(str(result.total_swaps))
+        self.depth_var.set(str(result.max_depth))
+
+    # --- Drawing ---
+
+    def _on_canvas_configure(self, _event=None):
+        if self._resize_after_id is not None:
+            try:
+                self.after_cancel(self._resize_after_id)
+            except Exception:
+                pass
+        self._resize_after_id = self.after(120, self._redraw_from_state)
+
+    def _redraw_from_state(self):
+        self._resize_after_id = None
+        if self._steps and 0 <= self._step_index < len(self._steps):
+            self._draw_bars_from_step(self._steps[self._step_index])
+            self._draw_recursion_panel(self._steps[self._step_index], self._steps[self._step_index].array)
+        elif self.array:
+            self._draw_bars_from_array(self.array, None)
+            self._draw_recursion_panel(None, self.array)
+
+    def _bar_fill(self, index: int, step: SortStep | None) -> str:
+        if step is None:
+            return COLOR_UNSORTED
+        if index in step.swap_indices:
+            return COLOR_SWAP
+        if index in step.compare_indices:
+            return COLOR_COMPARE
+        if step.pivot_index is not None and index == step.pivot_index:
+            return COLOR_PIVOT
+        if index in step.sorted_indices:
+            return COLOR_SORTED
+        return COLOR_UNSORTED
+
+    def _draw_bars_from_array(self, arr: list[int], step: SortStep | None):
+        self.canvas.delete("all")
+        if not arr:
+            return
+        w = max(self.canvas.winfo_width(), 200)
+        h = max(self.canvas.winfo_height(), 120)
+        pad_x, pad_y = 16, 20
+        n = len(arr)
+        max_v = max(arr) if arr else 1
+        gap = 4
+        bar_w = max(3, (w - 2 * pad_x - gap * (n - 1)) / n)
+        base_y = h - pad_y
+        for i, val in enumerate(arr):
+            x0 = pad_x + i * (bar_w + gap)
+            x1 = x0 + bar_w
+            bar_h = (val / max_v) * (h - 2 * pad_y)
+            y0 = base_y - bar_h
+            color = self._bar_fill(i, step)
+            self.canvas.create_rectangle(x0, y0, x1, base_y, fill=color, outline="", width=0)
+
+    def _draw_bars_from_step(self, step: SortStep):
+        self._draw_bars_from_array(list(step.array), step)
+
+    def _draw_recursion_panel(self, step: SortStep | None, arr: list[int]):
+        self.decision_canvas.delete("all")
+        n = len(arr)
+        if n == 0:
+            return
+        w = max(self.decision_canvas.winfo_width(), 200)
+        h = max(self.decision_canvas.winfo_height(), 100)
+        pad = 14
+        depth_txt = f"depth {step.depth}" if step else "idle"
+        range_txt = f"[{step.left} .. {step.right}]" if step else "full array"
+        self.decision_canvas.create_text(
+            pad, 18, anchor="w",
+            text=f"Recursion frame: {depth_txt}   Subarray: {range_txt}",
+            fill=TEXT_MUTED, font=("Consolas", 10),
+        )
+        y_mid = h // 2 + 10
+        usable = w - 2 * pad
+        cell = usable / n
+        self.decision_canvas.create_line(pad, y_mid, pad + usable, y_mid, fill=BORDER_BRIGHT, width=2)
+        for i in range(n + 1):
+            x = pad + i * cell
+            self.decision_canvas.create_line(x, y_mid - 4, x, y_mid + 4, fill=BORDER_COLOR, width=1)
+        if step:
+            x0 = pad + step.left * cell
+            x1 = pad + (step.right + 1) * cell
+            self.decision_canvas.create_rectangle(
+                x0, y_mid - 14, x1, y_mid + 14,
+                outline=ACCENT_BRIGHT, width=2, fill="",
+            )
+        for i, val in enumerate(arr):
+            cx = pad + (i + 0.5) * cell
+            self.decision_canvas.create_text(cx, y_mid + 28, text=str(val), fill=TEXT_SECONDARY, font=("Consolas", 9))

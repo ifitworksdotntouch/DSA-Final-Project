@@ -37,9 +37,25 @@ def section_title(parent, text, grid=False, row=0):
 
 
 def start_row(parent, label_text, var, color):
-    row = ctk.CTkFrame(parent, fg_color="transparent"); row.pack(fill="x", padx=12, pady=2)
-    ctk.CTkLabel(row, text=label_text, font=FONT_SMALL, text_color=TEXT_SECONDARY).pack(side="left")
-    ctk.CTkLabel(row, textvariable=var, font=FONT_LABEL, text_color=color).pack(side="right")
+    row = ctk.CTkFrame(parent, fg_color="transparent")
+    row.pack(fill="x", padx=12, pady=2)
+    row.grid_columnconfigure(1, weight=1)
+    ctk.CTkLabel(row, text=label_text, font=FONT_SMALL, text_color=TEXT_SECONDARY).grid(row=0, column=0, sticky="nw")
+    ctk.CTkLabel(row, textvariable=var, font=FONT_LABEL, text_color=color, anchor="e").grid(row=0, column=1, sticky="e")
+
+
+def start_row_wrapped_value(parent, label_text, var, color, app, font=None):
+    """Single-line labels + full-width wrapped value (for long subarray text)."""
+    row = ctk.CTkFrame(parent, fg_color="transparent")
+    row.pack(fill="x", padx=12, pady=4)
+    ctk.CTkLabel(row, text=label_text, font=FONT_SMALL, text_color=TEXT_SECONDARY).pack(anchor="w")
+    vl = ctk.CTkLabel(
+        row, textvariable=var,
+        font=font or FONT_MONO,
+        text_color=color, anchor="w", justify="left",
+    )
+    vl.pack(fill="x", anchor="w", pady=(2, 0))
+    app._bind_wrap_to_parent(row, vl, inset=16)
 
 
 class LeftPanel:
@@ -66,15 +82,52 @@ class LeftPanel:
         ctk.CTkButton(input_frame, text="Generate Array", height=32, font=FONT_LABEL, fg_color=ACCENT_BLUE, hover_color=ACCENT_BRIGHT, corner_radius=6, border_width=1, border_color=BORDER_BRIGHT, command=self.app.generate_array).pack(fill="x", padx=10, pady=(0, 10))
     
     def pivot_section(self):
-        pivot_frame = card_frame(self.app.left); pivot_frame.pack(fill="x", pady=(0, 8))
-        header = ctk.CTkFrame(pivot_frame, fg_color="transparent"); header.pack(fill="x", padx=10, pady=(10, 4))
+        pivot_frame = card_frame(self.app.left)
+        pivot_frame.pack(fill="x", pady=(0, 8))
+
+        # Header row
+        header = ctk.CTkFrame(pivot_frame, fg_color="transparent")
+        header.pack(fill="x", padx=10, pady=(10, 4))
         header.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(header, text="PIVOT SELECTION", font=FONT_TITLE, text_color=TEXT_PRIMARY).grid(row=0, column=0, sticky="w")
-        ctk.CTkButton(header, text="?", width=22, height=22, font=FONT_SMALL, fg_color=ACCENT_BLUE, hover_color=ACCENT_BRIGHT, corner_radius=11, command=self.app.show_pivot_help).grid(row=0, column=1, sticky="e")
-        self.app.pivot_var = ctk.StringVar(value="last")
-        for value, label in [("first", "First element"), ("last", "Last element"), ("random", "Random element")]:
-            ctk.CTkRadioButton(pivot_frame, text=label, value=value, variable=self.app.pivot_var, font=FONT_SMALL, text_color=TEXT_PRIMARY, fg_color=ACCENT_BRIGHT, hover_color=ACCENT_BLUE).pack(anchor="w", padx=14, pady=3)
-        ctk.CTkFrame(pivot_frame, height=10, fg_color="transparent").pack()
+
+        ctk.CTkLabel(header, text="PIVOT (FIXED)", font=FONT_TITLE,
+                    text_color=TEXT_PRIMARY).grid(row=0, column=0, sticky="w")
+        ctk.CTkButton(header, text="?", width=22, height=22, font=FONT_SMALL,
+                    fg_color=ACCENT_BLUE, hover_color=ACCENT_BRIGHT,
+                    corner_radius=11, command=self.app.show_pivot_help).grid(row=0, column=1, sticky="e")
+        
+        ctk.CTkFrame(pivot_frame, height=1, fg_color=BORDER_COLOR).pack(fill="x", padx=10, pady=(0, 8))
+
+        highlight = ctk.CTkFrame(pivot_frame, fg_color=ACCENT_BLUE, corner_radius=8)
+        highlight.pack(fill="x", padx=10, pady=(0, 6))
+
+        name_row = ctk.CTkFrame(highlight, fg_color="transparent")
+        name_row.pack(fill="x", padx=10, pady=(8, 2))
+
+        ctk.CTkLabel(name_row, text="⚡", font=("Arial", 14),
+                    text_color=TEXT_PRIMARY).pack(side="left", padx=(0, 6))
+        ctk.CTkLabel(name_row, text="Median-of-three (fixed)", font=FONT_LABEL,
+                    text_color=TEXT_PRIMARY).pack(side="left")
+
+        ctk.CTkLabel(name_row, text="Hoare", font=("Consolas", 9, "bold"),
+                    fg_color=ACCENT_BRIGHT, corner_radius=4,
+                    text_color=TEXT_PRIMARY, padx=6).pack(side="right")
+        pivot_blurb = ctk.CTkLabel(
+            highlight,
+            text="Pivot is always the median of first, mid & last in each subarray, placed at the high index before partitioning.",
+            font=FONT_SMALL, text_color=TEXT_PRIMARY,
+            justify="left", anchor="w",
+        )
+        pivot_blurb.pack(anchor="w", fill="x", padx=10, pady=(2, 10))
+        self.app._bind_wrap_to_parent(highlight, pivot_blurb, inset=24)
+
+        note_row = ctk.CTkFrame(pivot_frame, fg_color="transparent")
+        note_row.pack(fill="x", padx=10, pady=(0, 10))
+
+        ctk.CTkLabel(note_row, text="Avg. complexity:",
+                    font=FONT_SMALL, text_color=TEXT_SECONDARY).pack(side="left")
+        ctk.CTkLabel(note_row, text="O(n log n)",
+                    font=FONT_LABEL, text_color=ACCENT_BRIGHT).pack(side="right")
     
     def speed_section(self):
         speed_frame = card_frame(self.app.left); speed_frame.pack(fill="x", pady=(0, 8))
@@ -98,11 +151,37 @@ class LeftPanel:
         ctk.CTkFrame(legend_frame, height=6, fg_color="transparent").pack()
     
     def status_section(self):
-        status_frame = card_frame(self.app.left); status_frame.pack(fill="x", pady=(0, 8))
-        row = ctk.CTkFrame(status_frame, fg_color="transparent"); row.pack(fill="x", padx=14, pady=10)
-        ctk.CTkLabel(row, text="STATUS", font=FONT_LABEL, text_color=TEXT_SECONDARY).pack(side="left")
+        status_frame = card_frame(self.app.left)
+        status_frame.pack(fill="x", pady=(0, 8))
+
+        # Sort status row
+        row = ctk.CTkFrame(status_frame, fg_color="transparent")
+        row.pack(fill="x", padx=14, pady=(10, 4))
+        row.grid_columnconfigure(1, weight=1)
+        ctk.CTkLabel(row, text="STATUS", font=FONT_LABEL, text_color=TEXT_SECONDARY).grid(row=0, column=0, sticky="nw", padx=(0, 8))
         self.app.status_var = ctk.StringVar(value="Idle")
-        self.app.status_label = ctk.CTkLabel(row, textvariable=self.app.status_var, font=FONT_LABEL, text_color=COLOR_PIVOT); self.app.status_label.pack(side="right", padx=6)
+        self.app.status_label = ctk.CTkLabel(
+            row, textvariable=self.app.status_var, font=FONT_LABEL, text_color=COLOR_PIVOT,
+            anchor="w", justify="left",
+        )
+        self.app.status_label.grid(row=0, column=1, sticky="ew")
+        self.app._bind_wrap_to_parent(row, self.app.status_label, inset=24)
+
+        # Divider
+        ctk.CTkFrame(status_frame, height=1, fg_color=BORDER_COLOR).pack(fill="x", padx=10)
+
+        # Backend connection row
+        backend_row = ctk.CTkFrame(status_frame, fg_color="transparent")
+        backend_row.pack(fill="x", padx=14, pady=(4, 10))
+        backend_row.grid_columnconfigure(1, weight=1)
+        ctk.CTkLabel(backend_row, text="BACKEND", font=FONT_LABEL, text_color=TEXT_SECONDARY).grid(row=0, column=0, sticky="nw", padx=(0, 8))
+        self.app.backend_var = ctk.StringVar(value="Checking…")
+        self.app.backend_label = ctk.CTkLabel(
+            backend_row, textvariable=self.app.backend_var, font=FONT_LABEL, text_color=TEXT_MUTED,
+            anchor="w", justify="left",
+        )
+        self.app.backend_label.grid(row=0, column=1, sticky="ew")
+        self.app._bind_wrap_to_parent(backend_row, self.app.backend_label, inset=24)
 
 class CenterPanel:
     def __init__(self, app):
@@ -120,7 +199,7 @@ class CenterPanel:
         inner.pack(pady=12, padx=12)
         buttons = [("▶  Start", "lime", self.app.start_sort), ("⏸  Pause", "#ffa502", self.app.pause_sort), ("⏭  Step", "#b44fff", self.app.step_sort), ("↺  Reset", COLOR_PIVOT, self.app.reset_sort)]
         for text, color, cmd in buttons:
-            ctk.CTkButton(inner, text=text, width=110, height=36, font=FONT_CTRL, text_color=color, fg_color=BG_INPUT, hover_color=BG_PANEL, border_width=1, border_color=BORDER_BRIGHT, corner_radius=6, command=cmd).pack(side="left", padx=5)
+            ctk.CTkButton(inner, text=text, width=100, height=34, font=FONT_CTRL, text_color=color, fg_color=BG_INPUT, hover_color=BG_PANEL, border_width=1, border_color=BORDER_BRIGHT, corner_radius=6, command=cmd).pack(side="left", padx=4)
         sep = ctk.CTkFrame(inner, width=1, height=30, fg_color=BORDER_COLOR); sep.pack(side="left", padx=12)
         ctk.CTkLabel(inner, text="Speed: ", font=FONT_SMALL, text_color=TEXT_SECONDARY).pack(side="left")
         self.app.speed_display = ctk.CTkLabel(inner, text="1.0", font=FONT_LABEL, text_color=COLOR_SWAP); self.app.speed_display.pack(side="left", padx=6)
@@ -133,14 +212,20 @@ class CenterPanel:
     def decision_canvas(self):
         decision_frame = card_frame(self.app.center); decision_frame.grid(row=2, column=0, sticky="ew", pady=(0, 8))
         ctk.CTkLabel(decision_frame, text="RECURSION TREE", font=FONT_SMALL, text_color=TEXT_MUTED).pack(anchor="w", padx=12, pady=(8, 0))
-        self.app.decision_canvas = tk.Canvas(decision_frame, bg=BG_APP, highlightthickness=0, height=160); self.app.decision_canvas.pack(fill="x", padx=8, pady=(4, 8))
+        self.app.decision_canvas = tk.Canvas(decision_frame, bg=BG_APP, highlightthickness=0, height=188)
+        self.app.decision_canvas.pack(fill="x", expand=False, padx=8, pady=(4, 8))
     
     def quote_bar(self):
         quote_frame = card_frame(self.app.center, fg_color=BG_PANEL)
         quote_frame.grid(row=3, column=0, sticky="ew")
         choices = ['"Divide and conquer — the essence of QuickSort."']
         self.app.quote_var = ctk.StringVar(value=random.choice(choices))
-        ctk.CTkLabel(quote_frame, textvariable=self.app.quote_var, font=FONT_HEADER, text_color=TEXT_MUTED).pack(pady=8)
+        quote_lbl = ctk.CTkLabel(
+            quote_frame, textvariable=self.app.quote_var,
+            font=FONT_HEADER, text_color=TEXT_MUTED, anchor="center", justify="center",
+        )
+        quote_lbl.pack(fill="x", padx=16, pady=10)
+        self.app._bind_wrap_to_parent(quote_frame, quote_lbl, inset=40)
 
 class RightPanel:
     def __init__(self, app):
@@ -152,10 +237,24 @@ class RightPanel:
         self.subarray()
     
     def log(self):
-        log_frame = card_frame(self.app.right); log_frame.grid(row=0, column=0, sticky="nsew", pady=(0, 8)); log_frame.grid_rowconfigure(1, weight=1); log_frame.grid_columnconfigure(0, weight=1)
+        log_frame = card_frame(self.app.right)
+        log_frame.grid(row=0, column=0, sticky="nsew", pady=(0, 8))
+        log_frame.grid_rowconfigure(1, weight=1, minsize=200)
+        log_frame.grid_columnconfigure(0, weight=1)
         section_title(log_frame, "EXPLANATION LOG", grid=True, row=0)
-        self.app.log_box = ctk.CTkTextbox(log_frame, fg_color=BG_INPUT, text_color=TEXT_PRIMARY, border_color=BORDER_COLOR, border_width=1, corner_radius=6, font=FONT_MONO, state="disabled")
-        self.app.log_box.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
+        self.app.log_box = ctk.CTkTextbox(
+            log_frame,
+            height=240,
+            fg_color=BG_INPUT,
+            text_color=TEXT_PRIMARY,
+            border_color=BORDER_COLOR,
+            border_width=1,
+            corner_radius=6,
+            font=FONT_MONO,
+            wrap="word",
+            state="disabled",
+        )
+        self.app.log_box.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 8))
         clear_btn = ctk.CTkButton(log_frame, text="Clear log", height=26, font=FONT_SMALL, fg_color=BG_INPUT, hover_color=BG_PANEL, text_color=TEXT_SECONDARY, border_width=1, border_color=BORDER_COLOR, corner_radius=6, command=self.app.clear_log); clear_btn.grid(row=2, column=0, sticky="e", padx=10, pady=(0, 8))
     
     def stats(self):
@@ -164,8 +263,7 @@ class RightPanel:
         self.app.comparison_var = ctk.StringVar(value="0")
         self.app.swap_var = ctk.StringVar(value="0")
         self.app.depth_var = ctk.StringVar(value="0")
-        self.app.time_var = ctk.StringVar(value="00:00.000")
-        stats = [("Comparisons", self.app.comparison_var, COLOR_COMPARE), ("Swaps", self.app.swap_var, COLOR_SWAP), ("Recursion depth", self.app.depth_var, ACCENT_BRIGHT), ("Elapsed time", self.app.time_var, TEXT_SECONDARY)]
+        stats = [("Comparisons", self.app.comparison_var, COLOR_COMPARE), ("Swaps", self.app.swap_var, COLOR_SWAP), ("Recursion depth", self.app.depth_var, ACCENT_BRIGHT)]
         for label, var, color in stats:
             start_row(stat_frame, label, var, color)
         ctk.CTkFrame(stat_frame, height=6, fg_color="transparent").pack()
@@ -176,6 +274,7 @@ class RightPanel:
         self.app.left_idx_var = ctk.StringVar(value="—")
         self.app.right_idx_var = ctk.StringVar(value="—")
         self.app.subarray_var = ctk.StringVar(value="[ ]")
-        for label, var, color in [("Left index", self.app.left_idx_var, ACCENT_BRIGHT), ("Right index", self.app.right_idx_var, ACCENT_BRIGHT), ("Subarray", self.app.subarray_var, TEXT_PRIMARY)]:
-            start_row(sub_array_frame, label, var, color)
+        start_row(sub_array_frame, "Left index", self.app.left_idx_var, ACCENT_BRIGHT)
+        start_row(sub_array_frame, "Right index", self.app.right_idx_var, ACCENT_BRIGHT)
+        start_row_wrapped_value(sub_array_frame, "Subarray", self.app.subarray_var, TEXT_PRIMARY, self.app)
         ctk.CTkFrame(sub_array_frame, height=6, fg_color="transparent").pack()

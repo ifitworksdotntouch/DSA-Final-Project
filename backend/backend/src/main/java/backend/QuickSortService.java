@@ -9,17 +9,10 @@ import java.util.Set;
 
 @Service
 public class QuickSortService {
-
-    /**
-     * Hoare quicksort with median-of-three pivot (fixed strategy) and full step trace.
-     */
     public SortResponse sort(List<Integer> input) {
         return new SortRun().execute(input);
     }
 
-    /**
-     * One sort invocation: all mutable trace state is local, so {@link QuickSortService} stays thread-safe.
-     */
     private static final class SortRun {
         private final List<SortStep> steps = new ArrayList<>();
         private int comparisons = 0;
@@ -29,10 +22,8 @@ public class QuickSortService {
 
         SortResponse execute(List<Integer> input) {
             int[] arr = input.stream().mapToInt(Integer::intValue).toArray();
-            long start = System.currentTimeMillis();
             quickSort(arr, 0, arr.length - 1, 0);
-            long elapsed = System.currentTimeMillis() - start;
-            return new SortResponse(steps, comparisons, swaps, maxDepth, elapsed);
+            return new SortResponse(steps, comparisons, swaps, maxDepth);
         }
 
         private void quickSort(int[] arr, int low, int high, int depth) {
@@ -57,6 +48,11 @@ public class QuickSortService {
             int pivotValue = medianOfThree(arr, low, high, depth);
             int pivotIdx = high;
 
+            recordStep(arr, pivotIdx,
+                    List.of(), List.of(), new ArrayList<>(sortedIndices),
+                    low, high, depth,
+                    "Hoare Partition: Starting with pivot " + pivotValue + ". Scanning from both ends.");
+
             int left = low - 1;
             int right = high + 1;
 
@@ -67,7 +63,7 @@ public class QuickSortService {
                     recordStep(arr, pivotIdx,
                             List.of(left), List.of(), new ArrayList<>(sortedIndices),
                             low, high, depth,
-                            "Comparing arr[" + left + "] (=" + arr[left] + ") with pivot " + pivotValue);
+                            "Hoare Partition: Left pointer scanning → " + arr[left] + (arr[left] < pivotValue ? " < " : " ≥ ") + pivotValue + (arr[left] < pivotValue ? ", keep moving right." : ", STOP."));
                 } while (arr[left] < pivotValue);
 
                 do {
@@ -76,62 +72,102 @@ public class QuickSortService {
                     recordStep(arr, pivotIdx,
                             List.of(right), List.of(), new ArrayList<>(sortedIndices),
                             low, high, depth,
-                            "Comparing arr[" + right + "] (=" + arr[right] + ") with pivot " + pivotValue);
+                            "Hoare Partition: Right pointer scanning → " + arr[right] + (arr[right] > pivotValue ? " > " : " ≤ ") + pivotValue + (arr[right] > pivotValue ? ", keep moving left." : ", STOP."));
                 } while (arr[right] > pivotValue);
 
                 if (left >= right) {
                     recordStep(arr, pivotIdx,
                             List.of(), List.of(), new ArrayList<>(sortedIndices),
                             low, high, depth,
-                            "Partitioning complete (Hoare). Split index " + right
-                                    + ": subarray [" + low + ".." + right + "] and [" + (right + 1) + ".." + high + "].");
+                            "Hoare Partition: Pointers crossed! Split at index " + right
+                                    + " → left subarray [" + low + ".." + right + "], right subarray [" + (right + 1) + ".." + high + "].");
                     return right;
                 }
 
                 swap(arr, left, right);
                 swaps++;
+
+                if (pivotIdx == left) pivotIdx = right;
+                else if (pivotIdx == right) pivotIdx = left;
+
                 recordStep(arr, pivotIdx,
                         List.of(), List.of(left, right), new ArrayList<>(sortedIndices),
                         low, high, depth,
-                        "Swapped arr[" + left + "] (=" + arr[left] + ") and arr[" + right + "] (=" + arr[right] + ")");
+                        "Hoare Partition: " + arr[left] + " and " + arr[right] + " are on the wrong sides → swapped.");
             }
         }
 
         private int medianOfThree(int[] arr, int low, int high, int depth) {
             int mid = (low + high) / 2;
 
+            recordStep(arr, null,
+                    List.of(), List.of(), new ArrayList<>(sortedIndices),
+                    low, high, depth,
+                    "Median-of-Three: Finding pivot from first (" + arr[low] + "), middle (" + arr[mid] + "), and last (" + arr[high] + ") elements.");
+
+            comparisons++;
+            recordStep(arr, null,
+                    List.of(low, mid), List.of(), new ArrayList<>(sortedIndices),
+                    low, high, depth,
+                    "Median-of-Three: Comparing first (" + arr[low] + ") and middle (" + arr[mid] + ").");
             if (arr[low] > arr[mid]) {
                 swap(arr, low, mid);
                 swaps++;
                 recordStep(arr, null,
                         List.of(low, mid), List.of(low, mid), new ArrayList<>(sortedIndices),
                         low, high, depth,
-                        "Median setup: swapping arr[" + low + "] and arr[" + mid + "]");
+                        "Median-of-Three: " + arr[mid] + " > " + arr[low] + " → swapped first and middle.");
+            } else {
+                recordStep(arr, null,
+                        List.of(low, mid), List.of(), new ArrayList<>(sortedIndices),
+                        low, high, depth,
+                        "Median-of-Three: " + arr[low] + " ≤ " + arr[mid] + " → no swap needed.");
             }
 
+            comparisons++;
+            recordStep(arr, null,
+                    List.of(low, high), List.of(), new ArrayList<>(sortedIndices),
+                    low, high, depth,
+                    "Median-of-Three: Comparing first (" + arr[low] + ") and last (" + arr[high] + ").");
             if (arr[low] > arr[high]) {
                 swap(arr, low, high);
                 swaps++;
                 recordStep(arr, null,
                         List.of(low, high), List.of(low, high), new ArrayList<>(sortedIndices),
                         low, high, depth,
-                        "Median setup: swapping arr[" + low + "] and arr[" + high + "]");
+                        "Median-of-Three: " + arr[high] + " > " + arr[low] + " → swapped first and last.");
+            } else {
+                recordStep(arr, null,
+                        List.of(low, high), List.of(), new ArrayList<>(sortedIndices),
+                        low, high, depth,
+                        "Median-of-Three: " + arr[low] + " ≤ " + arr[high] + " → no swap needed.");
             }
 
+            comparisons++;
+            recordStep(arr, null,
+                    List.of(mid, high), List.of(), new ArrayList<>(sortedIndices),
+                    low, high, depth,
+                    "Median-of-Three: Comparing middle (" + arr[mid] + ") and last (" + arr[high] + ").");
             if (arr[mid] > arr[high]) {
                 swap(arr, mid, high);
                 swaps++;
                 recordStep(arr, null,
                         List.of(mid, high), List.of(mid, high), new ArrayList<>(sortedIndices),
                         low, high, depth,
-                        "Median setup: swapping arr[" + mid + "] and arr[" + high + "]");
+                        "Median-of-Three: " + arr[high] + " > " + arr[mid] + " → swapped middle and last.");
+            } else {
+                recordStep(arr, null,
+                        List.of(mid, high), List.of(), new ArrayList<>(sortedIndices),
+                        low, high, depth,
+                        "Median-of-Three: " + arr[mid] + " ≤ " + arr[high] + " → no swap needed.");
             }
+
             swap(arr, mid, high);
             swaps++;
             recordStep(arr, high,
                     List.of(), List.of(mid, high), new ArrayList<>(sortedIndices),
                     low, high, depth,
-                    "Median value " + arr[high] + " moved to pivot index " + high + ".");
+                    "Median-of-Three: Pivot selected → " + arr[high] + " moved to end (index " + high + ").");
             return arr[high];
         }
 

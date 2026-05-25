@@ -45,7 +45,6 @@ def start_row(parent, label_text, var, color):
 
 
 def start_row_wrapped_value(parent, label_text, var, color, app, font=None):
-    """Single-line labels + full-width wrapped value (for long subarray text)."""
     row = ctk.CTkFrame(parent, fg_color="transparent")
     row.pack(fill="x", padx=12, pady=4)
     ctk.CTkLabel(row, text=label_text, font=FONT_SMALL, text_color=TEXT_SECONDARY).pack(anchor="w")
@@ -85,7 +84,6 @@ class LeftPanel:
         pivot_frame = card_frame(self.app.left)
         pivot_frame.pack(fill="x", pady=(0, 8))
 
-        # Header row
         header = ctk.CTkFrame(pivot_frame, fg_color="transparent")
         header.pack(fill="x", padx=10, pady=(10, 4))
         header.grid_columnconfigure(0, weight=1)
@@ -106,7 +104,7 @@ class LeftPanel:
 
         ctk.CTkLabel(name_row, text="⚡", font=("Arial", 14),
                     text_color=TEXT_PRIMARY).pack(side="left", padx=(0, 6))
-        ctk.CTkLabel(name_row, text="Median-of-three (fixed)", font=FONT_LABEL,
+        ctk.CTkLabel(name_row, text="Median-of-three", font=FONT_LABEL,
                     text_color=TEXT_PRIMARY).pack(side="left")
 
         ctk.CTkLabel(name_row, text="Hoare", font=("Consolas", 9, "bold"),
@@ -154,7 +152,6 @@ class LeftPanel:
         status_frame = card_frame(self.app.left)
         status_frame.pack(fill="x", pady=(0, 8))
 
-        # Sort status row
         row = ctk.CTkFrame(status_frame, fg_color="transparent")
         row.pack(fill="x", padx=14, pady=(10, 4))
         row.grid_columnconfigure(1, weight=1)
@@ -166,11 +163,8 @@ class LeftPanel:
         )
         self.app.status_label.grid(row=0, column=1, sticky="ew")
         self.app._bind_wrap_to_parent(row, self.app.status_label, inset=24)
-
-        # Divider
         ctk.CTkFrame(status_frame, height=1, fg_color=BORDER_COLOR).pack(fill="x", padx=10)
-
-        # Backend connection row
+        
         backend_row = ctk.CTkFrame(status_frame, fg_color="transparent")
         backend_row.pack(fill="x", padx=14, pady=(4, 10))
         backend_row.grid_columnconfigure(1, weight=1)
@@ -197,7 +191,7 @@ class CenterPanel:
         control_bar = card_frame(self.app.center); control_bar.grid(row=0, column=0, sticky="ew", pady=(0, 8))
         inner = ctk.CTkFrame(control_bar, fg_color="transparent")
         inner.pack(pady=12, padx=12)
-        buttons = [("▶  Start", "lime", self.app.start_sort), ("⏸  Pause", "#ffa502", self.app.pause_sort), ("⏭  Step", "#b44fff", self.app.step_sort), ("↺  Reset", COLOR_PIVOT, self.app.reset_sort)]
+        buttons = [("▶  Start", "lime", self.app.start_sort), ("⏸  Pause", "#ffa502", self.app.pause_sort), ("⏮  Prev", "#00bfff", self.app.prev_step), ("⏭  Step", "#b44fff", self.app.step_sort), ("↺  Reset", COLOR_PIVOT, self.app.reset_sort)]
         for text, color, cmd in buttons:
             ctk.CTkButton(inner, text=text, width=100, height=34, font=FONT_CTRL, text_color=color, fg_color=BG_INPUT, hover_color=BG_PANEL, border_width=1, border_color=BORDER_BRIGHT, corner_radius=6, command=cmd).pack(side="left", padx=4)
         sep = ctk.CTkFrame(inner, width=1, height=30, fg_color=BORDER_COLOR); sep.pack(side="left", padx=12)

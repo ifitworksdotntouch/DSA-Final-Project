@@ -20,6 +20,7 @@ from ui.panels import LeftPanel, CenterPanel, RightPanel
 class MyApp(ctk.CTk):
     def __init__(self):
         super().__init__()
+        self.launch_backend()
         self.title("QuickSort Application")
         self.geometry("1600x920")
         self.minsize(1100, 720)
@@ -229,6 +230,21 @@ class MyApp(ctk.CTk):
         self._cancel_playback()
         if self._steps:
             self.update_status("Paused", TEXT_SECONDARY)
+    
+    def prev_step(self):
+        self._playing = False
+        if self._step_index > 1:
+            self._step_index -= 2
+            self.update_status("Stepping", COLOR_COMPARE)
+            step = self._steps[self._step_index]
+            self._step_index += 1
+            self._draw_bars_from_step(step)    
+            self._draw_recursion_panel(step, step.array)  
+            self._update_stats_from_step(step) 
+            if step.message:
+                self.log(step.message)
+        else:
+            self.log("Already at the first step.")
 
     def step_sort(self):
         if not self._steps:
@@ -282,7 +298,6 @@ class MyApp(ctk.CTk):
         ctk.CTkButton(window, text="Close", fg_color=ACCENT_BLUE, hover_color=ACCENT_BRIGHT, corner_radius=6, command=window.destroy).pack(pady=12)
 
     def _bind_wrap_to_parent(self, parent, label, inset=32):
-        """Keep multi-line labels from clipping when the window is resized."""
         def _apply(_event=None):
             try:
                 w = parent.winfo_width()
@@ -348,8 +363,6 @@ class MyApp(ctk.CTk):
             self.after(0, _update)
         threading.Thread(target=_ping, daemon=True).start()
 
-    # --- Array parsing ---
-
     def _parse_array_from_entry(self):
         text = self.array_entry.get("1.0", "end").strip()
         if not text:
@@ -364,9 +377,6 @@ class MyApp(ctk.CTk):
             except ValueError:
                 return None
         return out
-
-    # --- Playback ---
-
     def _cancel_playback(self):
         if self._playback_after_id is not None:
             try:
@@ -465,8 +475,6 @@ class MyApp(ctk.CTk):
         self.swap_var.set(str(result.total_swaps))
         self.depth_var.set(str(result.max_depth))
 
-    # --- Drawing ---
-
     def _on_canvas_configure(self, _event=None):
         if self._resize_after_id is not None:
             try:
@@ -552,3 +560,18 @@ class MyApp(ctk.CTk):
         for i, val in enumerate(arr):
             cx = pad + (i + 0.5) * cell
             self.decision_canvas.create_text(cx, y_mid + 28, text=str(val), fill=TEXT_SECONDARY, font=("Consolas", 9))
+    
+    def launch_backend(self):
+        import subprocess
+        jar_path = os.path.join(os.path.dirname(__file__), "backend.jar")
+        try:
+            subprocess.Popen(
+                ["java", "-jar", jar_path],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                )
+        except FileNotFoundError:
+            self.after(500, lambda: self.log("Ayaw gumana haha"))
+        except Exception as e:
+            self.after(500, lambda: self.log(f"Failed: {e}"))
+            

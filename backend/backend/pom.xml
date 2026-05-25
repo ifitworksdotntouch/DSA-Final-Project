@@ -27,7 +27,8 @@
 		<url/>
 	</scm>
 	<properties>
-		<java.version>25</java.version>
+		<!-- Match the JDK used by Maven (mvnw -v). Release 25 requires a JDK 25 compiler. -->
+		<java.version>17</java.version>
 	</properties>
 	<dependencies>
 		<dependency>

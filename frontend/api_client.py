@@ -38,10 +38,10 @@ class SortStep:
 
 @dataclass
 class SortResult:
-    steps:             List[SortStep]
+    steps: List[SortStep]
     total_comparisons: int
-    total_swaps:       int
-    max_depth:         int
+    total_swaps: int
+    max_depth: int
     
     @staticmethod
     def from_dict(d: dict) -> "SortResult":

@@ -19,12 +19,12 @@ COLOR_SWAP = "#2ed573"
 COLOR_SORTED = "#1e90ff"
 COLOR_UNSORTED = "#2a4a6b"
 
-FONT_TITLE = ("Consolas", 13, "bold")
-FONT_LABEL = ("Consolas", 11, "bold")
-FONT_SMALL = ("Consolas", 10)
-FONT_MONO = ("Consolas", 11)
-FONT_HEADER = ("Consolas", 15, "bold")
-FONT_CTRL = ("Consolas", 12, "bold")
+FONT_TITLE = ("Consolas", 14, "bold")
+FONT_LABEL = ("Consolas", 12, "bold")
+FONT_SMALL = ("Consolas", 11)
+FONT_MONO = ("Consolas", 12)
+FONT_HEADER = ("Consolas", 16, "bold")
+FONT_CTRL = ("Consolas", 13, "bold")
 
 def card_frame(parent, corner_radius=8, border_width=1, border_color=BORDER_COLOR, fg_color=BG_CARD):
     return ctk.CTkFrame(parent, corner_radius=corner_radius, border_width=border_width,

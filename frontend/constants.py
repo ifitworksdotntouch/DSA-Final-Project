@@ -21,7 +21,7 @@ COLOR_UNSORTED = "#2a4a6b"
 
 FONT_TITLE = ("Consolas", 14, "bold")
 FONT_LABEL = ("Consolas", 12, "bold")
-FONT_SMALL = ("Consolas", 11)
+FONT_SMALL = ("Consolas", 15)
 FONT_MONO = ("Consolas", 12)
 FONT_HEADER = ("Consolas", 16, "bold")
 FONT_CTRL = ("Consolas", 13, "bold")
